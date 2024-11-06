@@ -1,61 +1,92 @@
 const FootballPlayer = require("../models/FootballPlayer");
 
 const getPlayers = async (req, res) => {
-  const players = await FootballPlayer.find();
-  res.json({
-    players: players.map((player) => player.toObject({ getters: true })),
-  });
+  try {
+    const players = await FootballPlayer.find();
+    res.json(players);
+  } catch (error) {
+    console.error(error.message);
+    res
+      .status(400)
+      .json({ status: "Error", message: "Error fetching players" });
+  }
 };
 
 const createPlayer = async (req, res) => {
-  const { name, age, position } = req.body;
-  const newPlayer = await FootballPlayer.create({ name, age, position });
+  try {
+    const newPlayer = await FootballPlayer.create({
+      name: req.body.name,
+      age: req.body.age,
+      position: req.body.position,
+    });
 
-  res.json({ player: newPlayer.toObject() });
+    res.json({ status: "Ok", player: newPlayer });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({ status: "Error", message: "Error creating player" });
+  }
 };
 
 const getPlayerById = async (req, res) => {
-  const playerId = req.params.id;
+  try {
+    const player = await FootballPlayer.findById(req.params.id);
 
-  const player = await FootballPlayer.findById(playerId);
-  if (!player) {
-    return res.status(404).json({ message: "Player not found" });
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    res.json({ status: "Ok", player: player });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      status: "Error",
+      message: "Error getting player with id: " + req.params.id,
+    });
   }
-
-  res.json({ player: player.toObject() });
 };
 
 const updatePlayer = async (req, res) => {
-  const { name, age, position } = req.body;
-  const playerId = req.params.id;
-
-  let player = await FootballPlayer.findById(playerId);
-  if (!player) {
-    return res.status(404).json({ message: "Player not found" });
-  }
-
-  player.name = name;
-  player.age = age;
-  player.position = position;
-
   try {
-    await player.save();
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
+    const player = await FootballPlayer.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+        age: req.body.age,
+        position: req.body.position,
+      },
+      { new: true }
+    );
 
-  res.json({ player: player.toObject({ getters: true }) });
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    res.json({ status: "Ok", player: player });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      status: "Error",
+      message: "Error updating player with id: " + req.params.id,
+    });
+  }
 };
 
 const deletePlayer = async (req, res) => {
-  const playerId = req.params.id;
+  try {
+    const player = await FootballPlayer.findByIdAndDelete(req.params.id);
 
-  let player = await FootballPlayer.findByIdAndDelete(playerId);
-  if (!player) {
-    return res.status(404).json({ message: "Player not found" });
+    if (!player) {
+      return res.status(404).json({ message: "Player not found" });
+    }
+
+    res.json({ status: "Ok", message: "Player deleted" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      status: "Error",
+      message: "Error deleting player with id: " + req.params.id,
+    });
   }
-
-  res.json({ message: "Player deleted" });
 };
 
 exports.getPlayers = getPlayers;
